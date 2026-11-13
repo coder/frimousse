@@ -44,6 +44,16 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
       - name: Install dependencies
         run: npm ci  
+      # npm trusted publishing (OIDC) can only be configured for a package that
+      # already exists, so the first release of @coder/frimousse authenticates
+      # with an NPM_TOKEN secret instead. After it, configure trusted publishing
+      # for this workflow on npmjs.com, then revoke the token and delete the
+      # secret; this step is skipped and npm falls back to OIDC.
+      - name: Configure npm token (first release only)
+        if: env.NPM_TOKEN != ''
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" >> "$HOME/.npmrc"
       - name: Release package
         run: |
           ARGS=""

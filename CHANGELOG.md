@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+- Publish as `@coder/frimousse`, Coder's fork of `frimousse`.
+
 ## [0.4.0] - 2026-09-21
 
 - Add `resolveEmojiData` prop on `EmojiPicker.Root` and export `defaultEmojiDataResolver` to support custom data sources and locales.
