@@ -2,6 +2,7 @@
 
 - Publish as `@coder/frimousse`, Coder's fork of `frimousse`.
 - Fix `aria-rowindex` and `aria-colindex` starting at 0 in `EmojiPicker.List`; ARIA requires them to start at 1.
+- Render category headers in `EmojiPicker.List` as grid rows (`row` and `gridcell`), counted in `aria-rowcount` and `aria-rowindex`, and place each one before its first emoji row in the DOM, so a heading inside a custom `CategoryHeader` is valid and read in order.
 
 ## [0.4.0] - 2026-09-21
 
