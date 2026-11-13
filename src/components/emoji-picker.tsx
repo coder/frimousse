@@ -1,7 +1,6 @@
 import {
   type ComponentProps,
   type CSSProperties,
-  Fragment,
   forwardRef,
   memo,
   type ChangeEvent as ReactChangeEvent,
@@ -777,6 +776,10 @@ function listCategoryProps(
   category?: EmojiPickerDataCategory,
 ): WithAttributes<ComponentProps<"div">> {
   return {
+    role: category ? "row" : undefined,
+    "aria-rowindex": category
+      ? category.startRowIndex + categoryIndex + 1
+      : undefined,
     "frimousse-category": "",
     style: {
       contain: "content",
@@ -789,6 +792,9 @@ function listCategoryProps(
       width: "100%",
       pointerEvents: "none",
       position: "absolute",
+      // Rows paint like positioned elements (they use `contain`) and come
+      // after their category in the DOM, so keep sticky headers above them.
+      zIndex: 1,
     },
   };
 }
@@ -800,6 +806,7 @@ function listCategoryHeaderProps(
 ): WithAttributes<EmojiPickerListCategoryHeaderProps> {
   return {
     category,
+    role: !sizer ? "gridcell" : undefined,
     "frimousse-category-header": "",
     style: {
       contain: !sizer ? "layout paint" : undefined,
@@ -912,7 +919,7 @@ const EmojiPickerListRow = memo(
     }
 
     return (
-      <Row {...listRowProps(rowIndex)}>
+      <Row {...listRowProps(rowIndex + row.categoryIndex + 1)}>
         {row.emojis.map((emoji, columnIndex) => (
           <EmojiPickerListEmoji
             columnIndex={columnIndex}
@@ -1147,6 +1154,14 @@ const EmojiPickerList = forwardRef<HTMLDivElement, EmojiPickerListProps>(
 
     useImperativeHandle(forwardedRef, () => ref.current);
 
+    const category = (categoryIndex: number) => (
+      <EmojiPickerListCategory
+        CategoryHeader={CategoryHeader}
+        categoryIndex={categoryIndex}
+        key={`category-${categoryIndex}`}
+      />
+    );
+
     if (!rowsCount || !categoriesRowsStartIndices || categoriesCount === 0) {
       return (
         <div {...listProps(columns, 0, style)} {...props}>
@@ -1163,7 +1178,7 @@ const EmojiPickerList = forwardRef<HTMLDivElement, EmojiPickerListProps>(
 
     return (
       <div
-        {...listProps(columns, rowsCount, style)}
+        {...listProps(columns, rowsCount + categoriesCount, style)}
         {...props}
         ref={callbackRef}
       >
@@ -1180,38 +1195,46 @@ const EmojiPickerList = forwardRef<HTMLDivElement, EmojiPickerListProps>(
             Emoji={Emoji}
             Row={Row}
           />
-          {Array.from(
-            { length: viewportEndRowIndex - viewportStartRowIndex + 1 },
-            (_, index) => {
-              const rowIndex = viewportStartRowIndex + index;
-              const categoryIndex =
-                categoriesRowsStartIndices.indexOf(rowIndex);
-
-              return (
-                <Fragment key={rowIndex}>
-                  {categoryIndex >= 0 && (
-                    <div
-                      style={{
-                        height: "var(--frimousse-category-header-height)",
-                      }}
-                    />
-                  )}
+          {/* Each category renders before its first row, so headers follow the
+              reading order. One flat keyed list lets a category move between
+              these positions without remounting. */}
+          {[
+            ...categoriesRowsStartIndices.flatMap((startRowIndex, index) =>
+              startRowIndex < viewportStartRowIndex ? [category(index)] : [],
+            ),
+            ...Array.from(
+              { length: viewportEndRowIndex - viewportStartRowIndex + 1 },
+              (_, index) => {
+                const rowIndex = viewportStartRowIndex + index;
+                const categoryIndex =
+                  categoriesRowsStartIndices.indexOf(rowIndex);
+                const row = (
                   <EmojiPickerListRow
                     Emoji={Emoji}
+                    key={`row-${rowIndex}`}
                     Row={Row}
                     rowIndex={rowIndex}
                   />
-                </Fragment>
-              );
-            },
-          )}
-          {Array.from({ length: categoriesCount }, (_, index) => (
-            <EmojiPickerListCategory
-              CategoryHeader={CategoryHeader}
-              categoryIndex={index}
-              key={index}
-            />
-          ))}
+                );
+
+                return categoryIndex >= 0
+                  ? [
+                      category(categoryIndex),
+                      <div
+                        key={`spacer-${rowIndex}`}
+                        style={{
+                          height: "var(--frimousse-category-header-height)",
+                        }}
+                      />,
+                      row,
+                    ]
+                  : [row];
+              },
+            ).flat(),
+            ...categoriesRowsStartIndices.flatMap((startRowIndex, index) =>
+              startRowIndex > viewportEndRowIndex ? [category(index)] : [],
+            ),
+          ]}
         </div>
       </div>
     );

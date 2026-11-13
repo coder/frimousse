@@ -204,6 +204,7 @@ export function createEmojiPickerStore(
         rowHeight,
         viewportHeight,
         categoryHeaderHeight,
+        data,
       } = get();
 
       const list = listRef?.current;
@@ -228,7 +229,16 @@ export function createEmojiPickerStore(
         });
       }
 
-      const row = list.querySelector(`[aria-rowindex="${rowIndex + 1}"]`);
+      const activeRow = data?.rows[rowIndex];
+
+      if (!activeRow) {
+        return;
+      }
+
+      // Each category header before this row is also a grid row.
+      const row = list.querySelector(
+        `[aria-rowindex="${rowIndex + activeRow.categoryIndex + 2}"]`,
+      );
 
       if (!(row instanceof HTMLElement)) {
         return;
