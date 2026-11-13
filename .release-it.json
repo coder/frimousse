@@ -19,7 +19,7 @@
     "skipChecks": true
   },
   "hooks": {
-    "before:init": "npm run lint -- --filter=frimousse",
+    "before:init": "npm run lint -- --filter=@coder/frimousse",
     "after:bump": "npm run format -- package.json"
   }
 }

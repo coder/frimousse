@@ -22,7 +22,7 @@ jobs:
       - name: Install dependencies
         run: npm ci  
       - name: Build package
-        run: npx turbo run frimousse#build
+        run: npx turbo run @coder/frimousse#build
       - name: Run linting
         run: npm run lint
   test:
