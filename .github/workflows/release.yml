@@ -23,6 +23,7 @@ concurrency:
   group: ${{ github.workflow }}
 run-name: "Release (increment: ${{ github.event.inputs.increment }}, prerelease: ${{ github.event.inputs.prerelease || 'none' }}${{ github.event.inputs.dry-run == 'true' && ', dry run' || '' }})"
 permissions:
+  # npm trusted publishing (OIDC); needs npm 11.5.1 or later.
   id-token: write
   contents: write
 jobs:

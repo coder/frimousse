@@ -22,11 +22,12 @@ jobs:
       - name: Install dependencies
         run: npm ci  
       - name: Build package
-        run: npx turbo run frimousse#build
+        run: npx turbo run @coder/frimousse#build
       - name: Run linting
         run: npm run lint
   test:
-    runs-on: ubuntu-latest
+    # Playwright 1.51 has no Chromium build for Ubuntu 26.04 (ubuntu-latest).
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - name: Checkout commit

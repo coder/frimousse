@@ -15,6 +15,9 @@
 
 A lightweight, unstyled, and composable emoji picker for React.
 
+> [!NOTE]
+> This is Coder's fork of [liveblocks/frimousse](https://github.com/liveblocks/frimousse), published as [`@coder/frimousse`](https://www.npmjs.com/package/@coder/frimousse). It carries accessibility fixes that [coder/coder](https://github.com/coder/coder) needs. Import from `@coder/frimousse` wherever this README imports from `frimousse`.
+
 - ⚡️ **Lightweight and fast**: Dependency-free, tree-shakable, and virtualized with minimal re-renders
 - 🎨 **Unstyled and composable**: Bring your own styles and compose parts as you want
 - 🔄 **Always up-to-date**: Latest emoji data is fetched when needed and cached locally
@@ -26,7 +29,7 @@ A lightweight, unstyled, and composable emoji picker for React.
 ## Installation
 
 ```bash
-npm i frimousse
+npm i @coder/frimousse
 ```
 
 If you are using [shadcn/ui](https://ui.shadcn.com/), you can also install it as a pre-built component via the [shadcn CLI](https://ui.shadcn.com/docs/cli).
