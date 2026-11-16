@@ -1,6 +1,7 @@
 ## [Unreleased]
 
 - Publish as `@coder/frimousse`, Coder's fork of `frimousse`.
+- Fix `aria-rowindex` and `aria-colindex` starting at 0 in `EmojiPicker.List`; ARIA requires them to start at 1.
 
 ## [0.4.0] - 2026-09-21
 
