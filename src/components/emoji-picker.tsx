@@ -59,6 +59,7 @@ import type {
   WithAttributes,
 } from "../types";
 import { shallow } from "../utils/compare";
+import { getEmojiRowAriaIndex } from "../utils/get-emoji-row-aria-index";
 import { noop } from "../utils/noop";
 import { requestIdleCallback } from "../utils/request-idle-callback";
 import { useCreateStore, useSelector, useSelectorKey } from "../utils/store";
@@ -756,12 +757,12 @@ function listEmojiProps(
 }
 
 function listRowProps(
-  rowIndex: number,
+  ariaRowIndex: number,
   sizer = false,
 ): WithAttributes<EmojiPickerListRowProps> {
   return {
     role: !sizer ? "row" : undefined,
-    "aria-rowindex": !sizer ? rowIndex + 1 : undefined,
+    "aria-rowindex": !sizer ? ariaRowIndex : undefined,
     "frimousse-row": "",
     style: {
       contain: !sizer ? "content" : undefined,
@@ -778,7 +779,8 @@ function listCategoryProps(
   return {
     role: category ? "row" : undefined,
     "aria-rowindex": category
-      ? category.startRowIndex + categoryIndex + 1
+      ? // The row just before the category's first emoji row.
+        getEmojiRowAriaIndex(category.startRowIndex, categoryIndex) - 1
       : undefined,
     "frimousse-category": "",
     style: {
@@ -919,7 +921,7 @@ const EmojiPickerListRow = memo(
     }
 
     return (
-      <Row {...listRowProps(rowIndex + row.categoryIndex + 1)}>
+      <Row {...listRowProps(getEmojiRowAriaIndex(rowIndex, row.categoryIndex))}>
         {row.emojis.map((emoji, columnIndex) => (
           <EmojiPickerListEmoji
             columnIndex={columnIndex}

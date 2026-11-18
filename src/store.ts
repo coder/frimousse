@@ -7,6 +7,7 @@ import type {
   Locale,
   SkinTone,
 } from "./types";
+import { getEmojiRowAriaIndex } from "./utils/get-emoji-row-aria-index";
 import { createStore, createStoreContext } from "./utils/store";
 
 const VIEWPORT_OVERSCAN = 2;
@@ -235,9 +236,8 @@ export function createEmojiPickerStore(
         return;
       }
 
-      // Each category header before this row is also a grid row.
       const row = list.querySelector(
-        `[aria-rowindex="${rowIndex + activeRow.categoryIndex + 2}"]`,
+        `[aria-rowindex="${getEmojiRowAriaIndex(rowIndex, activeRow.categoryIndex)}"]`,
       );
 
       if (!(row instanceof HTMLElement)) {
