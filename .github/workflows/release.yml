@@ -1,27 +1,15 @@
 name: Release
-on: 
+# npm trusted publishing is configured for this file name; keep it.
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - package.json
+  # Retries a release whose publish or GitHub release step failed.
   workflow_dispatch:
-    inputs:
-      increment:
-        description: "Release increment (e.g. patch, minor, major, none (for existing prereleases))"
-        required: false
-        type: choice
-        options:
-          - patch
-          - minor
-          - major
-          - none
-      prerelease:
-        description: "Prerelease tag (e.g. beta, alpha)"
-        required: false
-        type: string
-      dry-run:
-        description: 'Run the release without publishing for testing (set to "true")'
-        required: false
-        default: "false"
 concurrency:
   group: ${{ github.workflow }}
-run-name: "Release (increment: ${{ github.event.inputs.increment }}, prerelease: ${{ github.event.inputs.prerelease || 'none' }}${{ github.event.inputs.dry-run == 'true' && ', dry run' || '' }})"
 permissions:
   # npm trusted publishing (OIDC); needs npm 11.5.1 or later.
   id-token: write
@@ -39,24 +27,56 @@ jobs:
           cache: npm
       - name: Setup npm
         run: npm install -g npm@11.6.0
-      - name: Setup git config
+      # Each step below is skipped when its part of the release already exists,
+      # so merging an unrelated package.json change does nothing.
+      - name: Check release state
+        id: state
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-      - name: Install dependencies
-        run: npm ci  
-      - name: Release package
-        run: |
-          ARGS=""
-          if [[ "${{ github.event.inputs.increment }}" != "none" ]]; then
-            ARGS+="${{ github.event.inputs.increment }}"
+          NAME=$(node -p "require('./package.json').name")
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          if npm view "${NAME}@${VERSION}" version > /dev/null 2>&1; then
+            echo "published=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "published=false" >> "$GITHUB_OUTPUT"
           fi
-          if [[ -n "${{ github.event.inputs.prerelease }}" ]]; then
-            ARGS+=" --preRelease=${{ github.event.inputs.prerelease }}"
+          if gh release view "v${VERSION}" > /dev/null 2>&1; then
+            echo "released=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "released=false" >> "$GITHUB_OUTPUT"
           fi
-          if [[ "${{ github.event.inputs.dry-run }}" == "true" ]]; then
-            ARGS+=" --dry-run"
-          fi
-          npm run release -- $ARGS --ci
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install dependencies
+        if: steps.state.outputs.published == 'false'
+        run: npm ci
+      - name: Build and lint package
+        if: steps.state.outputs.published == 'false'
+        run: npx turbo run build lint:tsc lint:biome lint:package --filter=@coder/frimousse
+      - name: Publish to npm
+        if: steps.state.outputs.published == 'false'
+        run: |
+          VERSION="${{ steps.state.outputs.version }}"
+          # npm requires an explicit dist-tag for prereleases, e.g. 1.0.0-beta.0.
+          if [[ "${VERSION}" == *-* ]]; then
+            PREID="${VERSION#*-}"
+            npm publish --tag "${PREID%%.*}"
+          else
+            npm publish
+          fi
+      - name: Create tag and GitHub release
+        if: steps.state.outputs.released == 'false'
+        run: |
+          VERSION="${{ steps.state.outputs.version }}"
+          # The changelog section for this version, without its heading.
+          awk -v heading="## [${VERSION}]" '
+            index($0, heading) == 1 { found = 1; next }
+            found && /^## \[/ { exit }
+            found { print }
+          ' CHANGELOG.md > release-notes.md
+          gh release create "v${VERSION}" \
+            --target "${GITHUB_SHA}" \
+            --title "v${VERSION}" \
+            --notes-file release-notes.md
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
