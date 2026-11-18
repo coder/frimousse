@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+## [0.4.2] - 2026-11-18
+
 - Render category headers in `EmojiPicker.List` as grid rows (`row` and `gridcell`), counted in `aria-rowcount` and `aria-rowindex`, and place each one before its first emoji row in the DOM, so a heading inside a custom `CategoryHeader` is valid and read in order.
 
 ## [0.4.1] - 2026-11-16
