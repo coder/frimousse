@@ -129,10 +129,14 @@ describe("EmojiPicker", () => {
 
     const rows = page.getByRole("row");
 
+    // Category headers are rows too, rendered before their first emoji row.
     await expect.element(rows.first()).toHaveAttribute("aria-rowindex", "1");
+    await expect
+      .element(rows.first().getByRole("gridcell"))
+      .toHaveTextContent("Smileys & emotion");
     await expect.element(rows.nth(5)).toHaveAttribute("aria-rowindex", "6");
 
-    const emojis = page.getByRole("gridcell");
+    const emojis = rows.nth(1).getByRole("gridcell");
 
     await expect.element(emojis.first()).toHaveAttribute("role", "gridcell");
     await expect.element(emojis.first()).toHaveAttribute("aria-colindex", "1");
@@ -440,20 +444,23 @@ describe("EmojiPicker.Root", () => {
 
     page.render(<Page />);
 
+    // The first row is the first category header.
+    const rows = page.getByRole("row");
+
     await expect
-      .element(page.getByRole("gridcell").nth(4))
+      .element(rows.nth(1).getByRole("gridcell").nth(4))
       .toHaveAttribute("aria-colindex", "5");
     await expect
-      .element(page.getByRole("gridcell").nth(5))
+      .element(rows.nth(2).getByRole("gridcell").nth(0))
       .toHaveAttribute("aria-colindex", "1");
     await expect
-      .element(page.getByRole("gridcell").nth(9))
+      .element(rows.nth(2).getByRole("gridcell").nth(4))
       .toHaveAttribute("aria-colindex", "5");
 
     await page.getByTestId("set-columns-8").click();
 
     await expect
-      .element(page.getByRole("gridcell").nth(7))
+      .element(rows.nth(1).getByRole("gridcell").nth(7))
       .toHaveAttribute("aria-colindex", "8");
   });
 
@@ -617,27 +624,27 @@ describe("EmojiPicker.Viewport", () => {
 
       await expect.element(page.getByText("😀")).toBeInTheDocument();
 
-      await expect.element(page.getByRole("row").nth(10)).toBeInTheDocument();
+      await expect.element(page.getByTestId("custom-row").nth(10)).toBeInTheDocument();
       await expect
-        .element(page.getByRole("row").nth(20))
+        .element(page.getByTestId("custom-row").nth(20))
         .not.toBeInTheDocument();
 
       await page.getByTestId("viewport-height").fill("500");
       await page.getByTestId("row-height").fill("20");
       await page.getByTestId("category-header-height").fill("20");
 
-      await expect.element(page.getByRole("row").nth(10)).toBeInTheDocument();
-      await expect.element(page.getByRole("row").nth(20)).toBeInTheDocument();
+      await expect.element(page.getByTestId("custom-row").nth(10)).toBeInTheDocument();
+      await expect.element(page.getByTestId("custom-row").nth(20)).toBeInTheDocument();
 
       await page.getByTestId("viewport-height").fill("200");
       await page.getByTestId("row-height").fill("100");
       await page.getByTestId("category-header-height").fill("400");
 
       await expect
-        .element(page.getByRole("row").nth(10))
+        .element(page.getByTestId("custom-row").nth(10))
         .not.toBeInTheDocument();
       await expect
-        .element(page.getByRole("row").nth(20))
+        .element(page.getByTestId("custom-row").nth(20))
         .not.toBeInTheDocument();
     },
   );

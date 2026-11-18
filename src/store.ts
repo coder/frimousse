@@ -7,6 +7,7 @@ import type {
   Locale,
   SkinTone,
 } from "./types";
+import { getEmojiRowAriaIndex } from "./utils/get-emoji-row-aria-index";
 import { createStore, createStoreContext } from "./utils/store";
 
 const VIEWPORT_OVERSCAN = 2;
@@ -204,6 +205,7 @@ export function createEmojiPickerStore(
         rowHeight,
         viewportHeight,
         categoryHeaderHeight,
+        data,
       } = get();
 
       const list = listRef?.current;
@@ -228,7 +230,15 @@ export function createEmojiPickerStore(
         });
       }
 
-      const row = list.querySelector(`[aria-rowindex="${rowIndex + 1}"]`);
+      const activeRow = data?.rows[rowIndex];
+
+      if (!activeRow) {
+        return;
+      }
+
+      const row = list.querySelector(
+        `[aria-rowindex="${getEmojiRowAriaIndex(rowIndex, activeRow.categoryIndex)}"]`,
+      );
 
       if (!(row instanceof HTMLElement)) {
         return;
