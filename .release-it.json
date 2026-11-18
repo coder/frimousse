@@ -9,13 +9,14 @@
   "git": {
     "requireBranch": "main",
     "commitMessage": "Release v${version}",
-    "tagName": "v${version}"
+    "tag": false,
+    "push": false
   },
   "github": {
-    "release": true,
-    "releaseName": "v${version}"
+    "release": false
   },
   "npm": {
+    "publish": false,
     "skipChecks": true
   },
   "hooks": {

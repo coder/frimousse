@@ -1,0 +1,68 @@
+name: Release PR
+on:
+  workflow_dispatch:
+    inputs:
+      increment:
+        description: "Release increment (e.g. patch, minor, major, none (for existing prereleases))"
+        required: false
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+          - none
+      prerelease:
+        description: "Prerelease tag (e.g. beta, alpha)"
+        required: false
+        type: string
+concurrency:
+  group: ${{ github.workflow }}
+run-name: "Release PR (increment: ${{ github.event.inputs.increment }}, prerelease: ${{ github.event.inputs.prerelease || 'none' }})"
+permissions:
+  contents: write
+  pull-requests: write
+jobs:
+  release-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout commit
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.21.0"
+          cache: npm
+      - name: Setup git config
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+      - name: Install dependencies
+        run: npm ci
+      # Bumps the version, moves the Unreleased changelog entries under it, and
+      # commits. .release-it.json turns off tagging, pushing and publishing;
+      # release.yml does those once the PR is merged.
+      - name: Bump version
+        run: |
+          ARGS=()
+          if [[ "${INCREMENT}" != "none" ]]; then
+            ARGS+=("${INCREMENT}")
+          fi
+          if [[ -n "${PRERELEASE}" ]]; then
+            ARGS+=("--preRelease=${PRERELEASE}")
+          fi
+          npm run release -- "${ARGS[@]}" --ci
+        env:
+          INCREMENT: ${{ github.event.inputs.increment }}
+          PRERELEASE: ${{ github.event.inputs.prerelease }}
+      - name: Open pull request
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          BRANCH="release/v${VERSION}"
+          git push origin "HEAD:refs/heads/${BRANCH}"
+          gh pr create \
+            --base main \
+            --head "${BRANCH}" \
+            --title "Release v${VERSION}" \
+            --body "Bumps the version to ${VERSION} and moves the Unreleased changelog entries under it. Merging publishes \`@coder/frimousse@${VERSION}\` to npm and creates the \`v${VERSION}\` tag and GitHub release (release.yml)."
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
