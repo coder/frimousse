@@ -1154,14 +1154,6 @@ const EmojiPickerList = forwardRef<HTMLDivElement, EmojiPickerListProps>(
 
     useImperativeHandle(forwardedRef, () => ref.current);
 
-    const category = (categoryIndex: number) => (
-      <EmojiPickerListCategory
-        CategoryHeader={CategoryHeader}
-        categoryIndex={categoryIndex}
-        key={`category-${categoryIndex}`}
-      />
-    );
-
     if (!rowsCount || !categoriesRowsStartIndices || categoriesCount === 0) {
       return (
         <div {...listProps(columns, 0, style)} {...props}>
@@ -1196,45 +1188,57 @@ const EmojiPickerList = forwardRef<HTMLDivElement, EmojiPickerListProps>(
             Row={Row}
           />
           {/* Each category renders before its first row, so headers follow the
-              reading order. One flat keyed list lets a category move between
-              these positions without remounting. */}
-          {[
-            ...categoriesRowsStartIndices.flatMap((startRowIndex, index) =>
-              startRowIndex < viewportStartRowIndex ? [category(index)] : [],
-            ),
-            ...Array.from(
-              { length: viewportEndRowIndex - viewportStartRowIndex + 1 },
-              (_, index) => {
-                const rowIndex = viewportStartRowIndex + index;
-                const categoryIndex =
-                  categoriesRowsStartIndices.indexOf(rowIndex);
-                const row = (
+              reading order. Keys stay stable, so a header that scrolls out of
+              view does not remount. */}
+          {categoriesRowsStartIndices.flatMap(
+            (startRowIndex, categoryIndex) => {
+              const endRowIndex =
+                (categoriesRowsStartIndices[categoryIndex + 1] ?? rowsCount) -
+                1;
+              const firstVisibleRowIndex = Math.max(
+                startRowIndex,
+                viewportStartRowIndex,
+              );
+              const lastVisibleRowIndex = Math.min(
+                endRowIndex,
+                viewportEndRowIndex,
+              );
+              const visibleRowIndices = Array.from(
+                {
+                  length: Math.max(
+                    0,
+                    lastVisibleRowIndex - firstVisibleRowIndex + 1,
+                  ),
+                },
+                (_, index) => firstVisibleRowIndex + index,
+              );
+              const isFirstRowVisible = visibleRowIndices[0] === startRowIndex;
+
+              return [
+                <EmojiPickerListCategory
+                  CategoryHeader={CategoryHeader}
+                  categoryIndex={categoryIndex}
+                  key={`category-${categoryIndex}`}
+                />,
+                isFirstRowVisible && (
+                  <div
+                    key={`spacer-${categoryIndex}`}
+                    style={{
+                      height: "var(--frimousse-category-header-height)",
+                    }}
+                  />
+                ),
+                ...visibleRowIndices.map((rowIndex) => (
                   <EmojiPickerListRow
                     Emoji={Emoji}
                     key={`row-${rowIndex}`}
                     Row={Row}
                     rowIndex={rowIndex}
                   />
-                );
-
-                return categoryIndex >= 0
-                  ? [
-                      category(categoryIndex),
-                      <div
-                        key={`spacer-${rowIndex}`}
-                        style={{
-                          height: "var(--frimousse-category-header-height)",
-                        }}
-                      />,
-                      row,
-                    ]
-                  : [row];
-              },
-            ).flat(),
-            ...categoriesRowsStartIndices.flatMap((startRowIndex, index) =>
-              startRowIndex > viewportEndRowIndex ? [category(index)] : [],
-            ),
-          ]}
+                )),
+              ];
+            },
+          )}
         </div>
       </div>
     );
